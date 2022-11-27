@@ -10,6 +10,7 @@ from detectron2.config import configurable
 from detectron2.data import detection_utils as utils
 from detectron2.data import transforms as T
 from detectron2.structures import BitMasks, Instances
+from detectron2.data import DatasetCatalog, MetadataCatalog
 
 from .mask_former_semantic_dataset_mapper import MaskFormerSemanticDatasetMapper
 
@@ -68,6 +69,7 @@ class MaskFormerPanopticDatasetMapper(MaskFormerSemanticDatasetMapper):
 
         dataset_dict = copy.deepcopy(dataset_dict)  # it will be modified by code below
         image = utils.read_image(dataset_dict["file_name"], format=self.img_format)
+        depth = utils.read_image(dataset_dict["depth_file_name"], format="L")
         utils.check_image_size(dataset_dict, image)
 
         # semantic segmentation
@@ -101,12 +103,15 @@ class MaskFormerPanopticDatasetMapper(MaskFormerSemanticDatasetMapper):
         # apply the same transformation to panoptic segmentation
         pan_seg_gt = transforms.apply_segmentation(pan_seg_gt)
 
+        depth = transforms.apply_segmentation(depth)
+
         from panopticapi.utils import rgb2id
 
         pan_seg_gt = rgb2id(pan_seg_gt)
-
+        image = np.concatenate([image,depth], axis =-1)
         # Pad image and segmentation label here!
         image = torch.as_tensor(np.ascontiguousarray(image.transpose(2, 0, 1)))
+        depth = torch.as_tensor(depth.copy())
         if sem_seg_gt is not None:
             sem_seg_gt = torch.as_tensor(sem_seg_gt.astype("long"))
         pan_seg_gt = torch.as_tensor(pan_seg_gt.astype("long"))
@@ -120,6 +125,7 @@ class MaskFormerPanopticDatasetMapper(MaskFormerSemanticDatasetMapper):
                 self.size_divisibility - image_size[0],
             ]
             image = F.pad(image, padding_size, value=128).contiguous()
+            depth = F.pad(depth, padding_size, value=128).contiguous()
             if sem_seg_gt is not None:
                 sem_seg_gt = F.pad(sem_seg_gt, padding_size, value=self.ignore_label).contiguous()
             pan_seg_gt = F.pad(
@@ -132,6 +138,7 @@ class MaskFormerPanopticDatasetMapper(MaskFormerSemanticDatasetMapper):
         # but not efficient on large generic data structures due to the use of pickle & mp.Queue.
         # Therefore it's important to use torch.Tensor.
         dataset_dict["image"] = image
+        dataset_dict['depth'] = depth
         if sem_seg_gt is not None:
             dataset_dict["sem_seg"] = sem_seg_gt.long()
 
@@ -163,3 +170,4 @@ class MaskFormerPanopticDatasetMapper(MaskFormerSemanticDatasetMapper):
         dataset_dict["instances"] = instances
 
         return dataset_dict
+

@@ -316,6 +316,9 @@ def main(args):
 
 
 if __name__ == "__main__":
+    from mask2former.data.datasets.register_cityscapes_depth_panoptic import register_all_cityscapes_panoptic
+    path = os.path.expanduser('~/DepthMask2Former/datasets/')
+    register_all_cityscapes_panoptic(path)
     args = default_argument_parser().parse_args()
     print("Command Line Args:", args)
     launch(
