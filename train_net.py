@@ -25,7 +25,7 @@ import torch
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
-from detectron2.data import MetadataCatalog, build_detection_train_loader
+from detectron2.data import MetadataCatalog, build_detection_train_loader, build_detection_test_loader
 from detectron2.engine import (
     DefaultTrainer,
     default_argument_parser,
@@ -54,6 +54,8 @@ from mask2former import (
     MaskFormerInstanceDatasetMapper,
     MaskFormerPanopticDatasetMapper,
     MaskFormerSemanticDatasetMapper,
+    MaskFormerPanopticDatasetMapperWithDepth,
+    DepthMaskFormerPanopticDatasetMapperVal,
     SemanticSegmentorWithTTA,
     add_maskformer2_config,
 )
@@ -168,9 +170,26 @@ class Trainer(DefaultTrainer):
         elif cfg.INPUT.DATASET_MAPPER_NAME == "coco_panoptic_lsj":
             mapper = COCOPanopticNewBaselineDatasetMapper(cfg, True)
             return build_detection_train_loader(cfg, mapper=mapper)
+        elif cfg.INPUT.DATASET_MAPPER_NAME == "mask_former_panoptic_with_depth":
+            mapper = MaskFormerPanopticDatasetMapperWithDepth(cfg, True)
+            return build_detection_train_loader(cfg, mapper=mapper)
         else:
             mapper = None
             return build_detection_train_loader(cfg, mapper=mapper)
+
+    
+    @classmethod
+    def build_test_loader(cls, cfg, dataset_name):
+        """
+        Returns:
+            iterable
+
+        It now calls :func:`detectron2.data.build_detection_test_loader`.
+        Overwrite it if you'd like a different data loader.
+        """
+        if cfg.INPUT.DATASET_MAPPER_NAME == "mask_former_panoptic_with_depth":
+            mapper = DepthMaskFormerPanopticDatasetMapperVal(cfg)
+        return build_detection_test_loader(cfg, dataset_name=dataset_name, mapper=mapper)
 
     @classmethod
     def build_lr_scheduler(cls, cfg, optimizer):
@@ -283,6 +302,7 @@ def setup(args):
     Create configs and perform basic setups.
     """
     cfg = get_cfg()
+    cfg.set_new_allowed(True)
     # for poly lr schedule
     add_deeplab_config(cfg)
     add_maskformer2_config(cfg)

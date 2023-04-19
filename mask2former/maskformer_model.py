@@ -15,7 +15,7 @@ from detectron2.utils.memory import retry_if_cuda_oom
 
 from .modeling.criterion import SetCriterion
 from .modeling.matcher import HungarianMatcher
-
+from .modeling.backbone.basic_dual_backbone import BasicDualBackbone
 
 @META_ARCH_REGISTRY.register()
 class MaskFormer(nn.Module):
@@ -193,8 +193,12 @@ class MaskFormer(nn.Module):
         images = [x["image"].to(self.device) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(images, self.size_divisibility)
+        
+        depth = [x["depth"].to(self.device) for x in batched_inputs]
+        depth = [(x - self.pixel_mean) / self.pixel_std for x in depth]
+        depth = ImageList.from_tensors(depth, self.size_divisibility)
 
-        features = self.backbone(images.tensor)
+        features = self.backbone({'image':images.tensor, 'depth':depth.tensor})
         outputs = self.sem_seg_head(features)
 
         if self.training:

@@ -1,10 +1,19 @@
 MODEL:
   BACKBONE:
     FREEZE_AT: 0
-    NAME: "build_resnet_backbone"
+    NAME: "BasicDualBackbone"
+    BASE: "build_resnet_backbone"
   WEIGHTS: "detectron2://ImageNetPretrained/torchvision/R-50.pkl"
   PIXEL_MEAN: [123.675, 116.280, 103.530]
   PIXEL_STD: [58.395, 57.120, 57.375]
+  RESNETS_depth:
+    DEPTH: 50
+    STEM_TYPE: "basic"  # not used
+    STEM_OUT_CHANNELS: 64
+    STRIDE_IN_1X1: False
+    OUT_FEATURES: ["res2", "res3", "res4", "res5"]
+    NORM: "SyncBN"  # use syncbn for cityscapes dataset
+    RES5_MULTI_GRID: [1, 1, 1]  # not used
   RESNETS:
     DEPTH: 50
     STEM_TYPE: "basic"  # not used
@@ -14,8 +23,8 @@ MODEL:
     NORM: "SyncBN"  # use syncbn for cityscapes dataset
     RES5_MULTI_GRID: [1, 1, 1]  # not used
 DATASETS:
-  TRAIN: ("cityscapes_fine_panoptic_train",)
-  TEST: ("cityscapes_fine_panoptic_val",)
+  TRAIN: ("cityscapes_panoptic_train_with_depth",)
+  TEST: ("cityscapes_panoptic_val_with_depth",)
 SOLVER:
   IMS_PER_BATCH: 16
   BASE_LR: 0.0001
@@ -47,7 +56,7 @@ INPUT:
   COLOR_AUG_SSD: True
   SIZE_DIVISIBILITY: -1
   FORMAT: "RGB"
-  DATASET_MAPPER_NAME: "mask_former_panoptic"
+  DATASET_MAPPER_NAME: "mask_former_panoptic_with_depth"
 TEST:
   EVAL_PERIOD: 5000
   AUG:
