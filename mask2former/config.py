@@ -114,5 +114,5 @@ def add_maskformer2_config(cfg):
     cfg.MODEL.MASK_FORMER.IMPORTANCE_SAMPLE_RATIO = 0.75
     
     cfg.MODEL.BACKBONE.BASE = None
-    cfg.MODEL.COMBINATION = 'sum'
+    cfg.MODEL.COMBINATION = 'weighted_sum'
     cfg.MODEL.INPUT_MODALITIES = ['image', 'depth']

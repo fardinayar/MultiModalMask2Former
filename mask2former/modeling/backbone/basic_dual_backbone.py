@@ -1,8 +1,10 @@
 from detectron2.modeling import BACKBONE_REGISTRY, Backbone, ShapeSpec, build_backbone
 from torch import nn
 from detectron2.config import configurable, CfgNode
+from detectron2.layers import Conv2d
 from typing import Optional, Union, Callable, List, Dict
 from torch import Tensor
+from torch.nn.functional import sigmoid
 
 @BACKBONE_REGISTRY.register()
 class BasicDualBackbone(Backbone):
@@ -29,14 +31,16 @@ class BasicDualBackbone(Backbone):
         super().__init__()
         self.backbone1 = backbone1
         self.backbone2 = backbone2
-        # To complete
-        self.combination = combination if isinstance(combination, Callable) else\
-            _get_combination_methods(combination)
-        self.modalities = modalities
         
+        #TODO: It's a simple assumption that should get resolved
         self._out_features = self.backbone1._out_features
         self._out_feature_channels = self.backbone1._out_feature_channels
         self._out_feature_strides = self.backbone1._out_feature_strides
+        
+        # To complete
+        self.combination = combination if isinstance(combination, Callable) else\
+            self._get_combination_methods(combination)
+        self.modalities = modalities
         
     def forward(self, x: Tensor):
         """
@@ -85,11 +89,19 @@ class BasicDualBackbone(Backbone):
             'modalities': cfg.MODEL.INPUT_MODALITIES
         }
         
-# TODO: add documentation
-def _get_combination_methods(method: str):
-    if method == 'sum':
-        return lambda out1, out2: {k: out1.get(k) + out2.get(k) for k in out1.keys()}
-    
+    # TODO: add documentation
+    def _get_combination_methods(self, method: str):
+        if method == 'sum':
+            return lambda out1, out2: {k: out1.get(k) + out2.get(k) for k in out1.keys()}
+        elif method == 'weighted_sum':
+            self.weighting_convs = nn.ModuleList()
+            for k in self._out_features:
+                self.weighting_convs.append(Conv2d(self._out_feature_channels[k], 1, 1))
+            return lambda out1, out2: {
+                k: out1.get(k) + out2.get(k) * sigmoid(self.weighting_convs[i](out1.get(k)))\
+                    for i, k in enumerate(out1)
+            }
+
     
 # TODO: add documentation 
 def _modality_specific_config(old_dict, name_to_remove):
