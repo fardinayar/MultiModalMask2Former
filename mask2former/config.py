@@ -115,4 +115,4 @@ def add_maskformer2_config(cfg):
     
     cfg.MODEL.BACKBONE.BASE = None
     cfg.MODEL.COMBINATION = 'weighted_sum'
-    cfg.MODEL.INPUT_MODALITIES = ['image', 'depth']
+    cfg.MODEL.INPUT_MODALITIES = ['image', 'image_right']

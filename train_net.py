@@ -56,6 +56,8 @@ from mask2former import (
     MaskFormerSemanticDatasetMapper,
     MaskFormerPanopticDatasetMapperWithDepth,
     DepthMaskFormerPanopticDatasetMapperVal,
+    MaskFormerPanopticDatasetMapperWithStereo,
+    StereoMaskFormerPanopticDatasetMapperVal,
     SemanticSegmentorWithTTA,
     add_maskformer2_config,
 )
@@ -173,6 +175,9 @@ class Trainer(DefaultTrainer):
         elif cfg.INPUT.DATASET_MAPPER_NAME == "mask_former_panoptic_with_depth":
             mapper = MaskFormerPanopticDatasetMapperWithDepth(cfg, True)
             return build_detection_train_loader(cfg, mapper=mapper)
+        elif cfg.INPUT.DATASET_MAPPER_NAME == "mask_former_panoptic_with_stereo":
+            mapper = MaskFormerPanopticDatasetMapperWithStereo(cfg, True)
+            return build_detection_train_loader(cfg, mapper=mapper)
         else:
             mapper = None
             return build_detection_train_loader(cfg, mapper=mapper)
@@ -189,6 +194,8 @@ class Trainer(DefaultTrainer):
         """
         if cfg.INPUT.DATASET_MAPPER_NAME == "mask_former_panoptic_with_depth":
             mapper = DepthMaskFormerPanopticDatasetMapperVal(cfg)
+        if cfg.INPUT.DATASET_MAPPER_NAME == "mask_former_panoptic_with_stereo":
+            mapper = StereoMaskFormerPanopticDatasetMapperVal(cfg)
         return build_detection_test_loader(cfg, dataset_name=dataset_name, mapper=mapper)
 
     @classmethod

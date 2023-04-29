@@ -26,6 +26,14 @@ from .data.dataset_mappers.mask_former_panoptic_dataset_mapper_with_depth_val im
     DepthMaskFormerPanopticDatasetMapperVal
 )
 
+from .data.dataset_mappers.mask_former_panoptic_dataset_mapper_with_stereo import (
+    MaskFormerPanopticDatasetMapperWithStereo
+)
+
+from .data.dataset_mappers.mask_former_panoptic_dataset_mapper_with_stereo_val import (
+    StereoMaskFormerPanopticDatasetMapperVal
+)
+
 # models
 from .maskformer_model import MaskFormer
 from .test_time_augmentation import SemanticSegmentorWithTTA

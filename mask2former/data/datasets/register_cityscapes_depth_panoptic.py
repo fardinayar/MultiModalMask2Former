@@ -58,6 +58,9 @@ def load_cityscapes_panoptic(image_dir, gt_dir, gt_json, meta):
         depth_file = (
             image_file.replace("leftImg8bit", "disparity")
         )
+        right_image_file_name = (
+            image_file.replace("leftImg8bit", "rightImg8bit")
+        )
         segments_info = [_convert_category_id(x, meta) for x in segments_info]
         ret.append(
             {
@@ -66,6 +69,7 @@ def load_cityscapes_panoptic(image_dir, gt_dir, gt_json, meta):
                     os.path.splitext(os.path.basename(image_file))[0].split("_")[:3]
                 ),
                 "depth_file_name": depth_file,
+                "right_image_file_name": right_image_file_name,
                 "sem_seg_file_name": sem_label_file,
                 "pan_seg_file_name": label_file,
                 "segments_info": segments_info,
