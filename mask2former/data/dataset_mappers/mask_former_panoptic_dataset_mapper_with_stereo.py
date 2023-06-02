@@ -71,7 +71,7 @@ class MaskFormerPanopticDatasetMapperWithStereo(MaskFormerSemanticDatasetMapper)
         ##### Import right image #####
         right_image_path = dataset_dict['file_name'].replace('leftImg8bit', 'rightImg8bit')
         assert os.path.exists(right_image_path), "Can't find right image. Expected right image to be in {}".format(right_image_path)
-        right_image = utils.read_image(right_image_path, format="L")
+        right_image = utils.read_image(right_image_path, format=self.img_format)
         utils.check_image_size(dataset_dict, image)
 
         # semantic segmentation

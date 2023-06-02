@@ -4,7 +4,7 @@ from detectron2.config import configurable, CfgNode
 from detectron2.layers import Conv2d
 from typing import Optional, Union, Callable, List, Dict
 from torch import Tensor
-from torch.nn.functional import sigmoid
+from torch import sigmoid
 
 @BACKBONE_REGISTRY.register()
 class BasicDualBackbone(Backbone):

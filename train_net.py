@@ -193,9 +193,9 @@ class Trainer(DefaultTrainer):
         Overwrite it if you'd like a different data loader.
         """
         if cfg.INPUT.DATASET_MAPPER_NAME == "mask_former_panoptic_with_depth":
-            mapper = DepthMaskFormerPanopticDatasetMapperVal(cfg)
+            mapper = DepthMaskFormerPanopticDatasetMapperVal(cfg, is_train=False)
         if cfg.INPUT.DATASET_MAPPER_NAME == "mask_former_panoptic_with_stereo":
-            mapper = StereoMaskFormerPanopticDatasetMapperVal(cfg)
+            mapper = StereoMaskFormerPanopticDatasetMapperVal(cfg, is_train=False)
         return build_detection_test_loader(cfg, dataset_name=dataset_name, mapper=mapper)
 
     @classmethod
@@ -279,7 +279,7 @@ class Trainer(DefaultTrainer):
             )
         elif optimizer_type == "ADAMW":
             optimizer = maybe_add_full_model_gradient_clipping(torch.optim.AdamW)(
-                params, cfg.SOLVER.BASE_LR
+                params, cfg.SOLVER.BASE_LR, betas=(0.98, 0.98)
             )
         else:
             raise NotImplementedError(f"no optimizer type {optimizer_type}")
