@@ -5,6 +5,9 @@ from detectron2.layers import Conv2d
 from typing import Optional, Union, Callable, List, Dict
 from torch import Tensor
 from torch import sigmoid
+from detectron2.checkpoint import Checkpointer
+import pickle
+from detectron2.utils.file_io import PathManager
 
 @BACKBONE_REGISTRY.register()
 class BasicDualBackbone(Backbone):
@@ -42,6 +45,8 @@ class BasicDualBackbone(Backbone):
             self._get_combination_methods(combination)
         self.modalities = modalities
         
+        assert len(self.modalities) == 2, 'Only 2 modalities are supported right now'
+        
     def forward(self, x: Tensor):
         """
         Args:
@@ -70,6 +75,7 @@ class BasicDualBackbone(Backbone):
         same_backbone = not isinstance(cfg.MODEL.BACKBONE.BASE, list)
         
         backbones = []
+        weights = []
         for i, modality in enumerate(cfg.MODEL.INPUT_MODALITIES):
             cfg_ = cfg.clone()
             cfg_.defrost()
@@ -81,7 +87,24 @@ class BasicDualBackbone(Backbone):
             cfg_.merge_from_list(backbone_cfg_)
             cfg_.freeze()
             backbones.append(build_backbone(cfg_, input_shape))
+            weights.append(cfg_.MODEL.WEIGHTS)
         
+        if len(weights) == 2:
+            assert weights[0] != weights[1], "Backbone-specific weights are the same!"
+            combined_state_dict = {}
+            for i in range(2):
+                with PathManager.open(weights[i], "rb") as f:
+                    data = pickle.load(f, encoding="latin1")
+                    for k, v in data['model'].items():
+                        combined_state_dict['backbone.backbone{}.{}'.format(i+1, k)] = v
+        
+            data['model'] = combined_state_dict
+            with PathManager.open('weights/dualbackbone.pkl', "wb") as f:
+                pickle.dump(data, f)
+            cfg.defrost()
+            cfg.MODEL.WEIGHTS = 'weights/dualbackbone.pkl'
+            cfg.freeze()
+            
         return {
             'backbone1': backbones[0],
             'backbone2': backbones[1],

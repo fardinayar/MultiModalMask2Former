@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import copy
 import logging
-
+import json
 import numpy as np
 import torch
 from torch.nn import functional as F
@@ -10,9 +10,8 @@ from detectron2.config import configurable
 from detectron2.data import detection_utils as utils
 from detectron2.data import transforms as T
 from detectron2.structures import BitMasks, Instances
-
+import cv2
 from .mask_former_semantic_dataset_mapper import MaskFormerSemanticDatasetMapper
-
 __all__ = ["MaskFormerPanopticDatasetMapper"]
 
 
@@ -71,7 +70,24 @@ class MaskFormerPanopticDatasetMapperWithDepth(MaskFormerSemanticDatasetMapper):
         ##### Import depth image #####
         depth_path = dataset_dict['file_name'].replace('leftImg8bit', 'disparity')
         assert os.path.exists(depth_path), "Can't find depth image. Expected depth image to be in {}".format(depth_path)
-        depth = utils.read_image(depth_path, format="L")
+        #depth = utils.read_image(depth_path, format="L")
+        depth = cv2.imread(dataset_dict["depth_file_name"], cv2.IMREAD_UNCHANGED)[:,:,None] / 256 
+        ##### TODO: Make a function
+        camera_calib_path = depth_path.replace('disparity', 'camera').replace('png', 'json')
+
+        assert os.path.isfile(camera_calib_path), "Camera file not found"
+        with open(camera_calib_path, 'r') as camera_file:
+            camera_file = json.loads(camera_file.read())
+        
+        baseline = camera_file['extrinsic']['baseline']
+        fx = camera_file['intrinsic']['fx']
+        
+        depth = depth
+        depth[depth > 0] = (fx * baseline) / depth[depth > 0]
+        depth[depth > 200] = 200
+        mean=4.284412912266262
+        std=5.848670987278186
+        depth = (depth-mean)/std
         utils.check_image_size(dataset_dict, image)
 
         # semantic segmentation

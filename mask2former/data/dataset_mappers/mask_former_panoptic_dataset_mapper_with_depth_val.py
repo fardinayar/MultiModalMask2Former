@@ -3,7 +3,9 @@ import logging
 import numpy as np
 from typing import List, Optional, Union
 import torch
-
+import cv2
+import os
+import json
 from detectron2.config import configurable
 
 from detectron2.data import detection_utils as utils
@@ -144,7 +146,26 @@ class DepthMaskFormerPanopticDatasetMapperVal:
         dataset_dict = copy.deepcopy(dataset_dict)  # it will be modified by code below
         # USER: Write your own image loading if it's not from a file
         image = utils.read_image(dataset_dict["file_name"], format=self.image_format)
-        depth = utils.read_image(dataset_dict["depth_file_name"], format='L')
+        #depth = utils.read_image(dataset_dict["depth_file_name"], format='L')
+        depth = cv2.imread(dataset_dict["depth_file_name"], cv2.IMREAD_UNCHANGED)[:,:,None] / 256
+                ##### TODO: Make a function
+        camera_calib_path = dataset_dict["depth_file_name"].replace('disparity', 'camera').replace('png', 'json')
+
+        assert os.path.isfile(camera_calib_path), "Camera file not found"
+        with open(camera_calib_path, 'r') as camera_file:
+            camera_file = json.loads(camera_file.read())
+        
+        baseline = camera_file['extrinsic']['baseline']
+        fx = camera_file['intrinsic']['fx']
+        
+        depth = depth
+        depth[depth > 0] = (fx * baseline) / depth[depth > 0]
+        depth[depth > 200] = 200
+        mean=4.284412912266262
+        std=5.848670987278186
+        depth = (depth-mean)/std
+        utils.check_image_size(dataset_dict, image)
+
         utils.check_image_size(dataset_dict, image)
 
         # USER: Remove if you don't do semantic/panoptic segmentation.

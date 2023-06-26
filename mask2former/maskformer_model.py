@@ -194,8 +194,8 @@ class MaskFormer(nn.Module):
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(images, self.size_divisibility)
         
-        depth = [x["depth"].to(self.device) for x in batched_inputs]
-        depth = [(x - self.pixel_mean) / self.pixel_std for x in depth]
+        depth = [x["depth"].to(self.device).float() for x in batched_inputs]
+        #depth = [(x - self.pixel_mean) / self.pixel_std for x in depth]
         depth = ImageList.from_tensors(depth, self.size_divisibility)
 
         features = self.backbone({'image':images.tensor, 'depth':depth.tensor})

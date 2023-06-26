@@ -27,7 +27,7 @@ INPUT:
 if __name__ == "__main__":
     input = sys.argv[1]
 
-    obj = torch.load(input, map_location="cpu")
+    obj = torch.load(input, map_location="cpu")['state_dict']
 
     newmodel = {}
     for k in list(obj.keys()):
@@ -40,6 +40,7 @@ if __name__ == "__main__":
             k = k.replace("bn{}".format(t), "conv{}.norm".format(t))
         k = k.replace("downsample.0", "shortcut")
         k = k.replace("downsample.1", "shortcut.norm")
+        k = k.replace('module.', '')
         print(old_k, "->", k)
         newmodel[k] = obj.pop(old_k).detach().numpy()
 
