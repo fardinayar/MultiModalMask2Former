@@ -7,9 +7,10 @@ import cv2
 import os
 import json
 from detectron2.config import configurable
-
+from depth_utils.read_depth import read_depth_cityscapes
 from detectron2.data import detection_utils as utils
 from detectron2.data import transforms as T
+from depth_utils.read_depth import read_depth_cityscapes, lidar_to_depth_image
 
 class DepthMaskFormerPanopticDatasetMapperVal:
     """
@@ -147,24 +148,10 @@ class DepthMaskFormerPanopticDatasetMapperVal:
         # USER: Write your own image loading if it's not from a file
         image = utils.read_image(dataset_dict["file_name"], format=self.image_format)
         #depth = utils.read_image(dataset_dict["depth_file_name"], format='L')
-        depth = cv2.imread(dataset_dict["depth_file_name"], cv2.IMREAD_UNCHANGED)[:,:,None] / 256
-                ##### TODO: Make a function
-        camera_calib_path = dataset_dict["depth_file_name"].replace('disparity', 'camera').replace('png', 'json')
-
-        assert os.path.isfile(camera_calib_path), "Camera file not found"
-        with open(camera_calib_path, 'r') as camera_file:
-            camera_file = json.loads(camera_file.read())
-        
-        baseline = camera_file['extrinsic']['baseline']
-        fx = camera_file['intrinsic']['fx']
-        
-        depth = depth
-        depth[depth > 0] = (fx * baseline) / depth[depth > 0]
-        depth[depth > 200] = 200
-        mean=4.284412912266262
-        std=5.848670987278186
-        depth = (depth-mean)/std
-        utils.check_image_size(dataset_dict, image)
+        if 'cityscapes' in dataset_dict["depth_file_name"]:
+            #depth = read_depth_cityscapes(dataset_dict["depth_file_name"],
+            #                              dataset_dict['camera_calib'])
+            depth = lidar_to_depth_image(dataset_dict["lidar_file_name"],  dataset_dict['camera_calib'])[:,:,None]
 
         utils.check_image_size(dataset_dict, image)
 

@@ -61,6 +61,20 @@ def load_cityscapes_panoptic(image_dir, gt_dir, gt_json, meta):
         right_image_file_name = (
             image_file.replace("leftImg8bit", "rightImg8bit")
         )
+        
+        camera_calib_path = (
+            depth_file.replace('disparity', 'camera').replace('png', 'json')
+        )
+        
+        lidar_file_name = (
+            depth_file.replace('disparity', 'pointcloud').replace('png', 'pcd')
+        )
+        
+        assert os.path.isfile(camera_calib_path), "Camera file not found"
+        with open(camera_calib_path, 'r') as camera_file:
+            camera_calib = json.loads(camera_file.read())
+            
+            
         segments_info = [_convert_category_id(x, meta) for x in segments_info]
         ret.append(
             {
@@ -73,6 +87,8 @@ def load_cityscapes_panoptic(image_dir, gt_dir, gt_json, meta):
                 "sem_seg_file_name": sem_label_file,
                 "pan_seg_file_name": label_file,
                 "segments_info": segments_info,
+                "camera_calib": camera_calib,
+                'lidar_file_name': lidar_file_name
             }
         )
     assert len(ret), f"No images found in {image_dir}!"
